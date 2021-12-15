@@ -1,0 +1,747 @@
+<script src="https://s3.amazonaws.com/mturk-public/externalHIT_v1.js"
+        type="text/javascript"></script>
+<head>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link crossorigin="anonymous" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+          rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.6.1/bootstrap-slider.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gojs/release/go.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/gojs/extensions/ZoomSlider.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/gojs/extensions/ZoomSlider.js"></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://dagrejs.github.io/project/graphlib-dot/v0.6.3/graphlib-dot.js"></script>
+    <script src="https://dagrejs.github.io/project/dagre-d3/latest/dagre-d3.js"></script>
+
+
+    <style>
+svg {
+  border: 3px solid #999;
+  font-size: 8pt;
+  height: 800px;
+  width: 450px;
+  overflow: visible;
+  float: left;
+}
+
+.diagram_container {
+   display: grid;
+   grid-auto-flow: column
+}
+
+.node {
+  white-space: nowrap;
+}
+
+.node rect,
+.node circle,
+.node ellipse {
+  stroke: #333;
+  fill: #fff;
+  stroke-width: 1.5px;
+}
+
+.cluster rect {
+  stroke: #333;
+  fill: #000;
+  fill-opacity: 0.1;
+  stroke-width: 1.5px;
+}
+
+.edgePath path.path {
+  stroke: #333;
+  stroke-width: 1.5px;
+  fill: none;
+}
+    body {
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        color: #444444;
+        font-size: 12pt;
+        background-color: #FAFAFA;
+    }
+
+    ul {
+        text-align: left;
+        list-style-position: inside;
+    }
+
+    textarea {
+        font-size: 18px;
+        margin: 0 auto;
+        display: block;
+        resize: none;
+    }
+
+
+    #submitButton {
+        margin: auto;
+        display: block;
+        width: auto;
+        background-color: #2172a4;
+        color: #fff;
+        font-size: 20pt;
+        padding: .5rem;
+        cursor: pointer;
+        border-radius: .75rem;
+    }
+
+    #submitButton:hover {
+        background-color: #06486F;
+    }
+
+    table {
+        border-spacing: 5px;
+    }
+
+    td.min {
+        width: 1%;
+        white-space: nowrap;
+    }
+
+    .examples {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+    }
+
+    .red {
+        color: red;
+    }
+
+    .accordion {
+        background-color: #eee;
+        color: #444;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 15px;
+        transition: 0.4s;
+    }
+
+    .active, .accordion:hover {
+        background-color: #ccc;
+    }
+
+    .accordion:after {
+        content: '\002B';
+        color: #777;
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+    }
+
+    .active:after {
+        content: "\2212";
+    }
+
+    .panel {
+        padding: 0 18px;
+        background-color: white;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+    }
+
+    /************************************
+    SLIDER STYLING
+    Taken from: https://www.w3schools.com/howto/howto_js_rangeslider.asp
+    ************************************/
+    .slidecontainer {
+        width: 50%; /* Width of the outside container */
+        display: block;
+        margin: auto;
+        position: relative;
+    }
+    .slidecontainer:before {
+        content: "\2796";
+        position: absolute;
+        left: -2rem;
+        top: 0;
+    }
+    .slidecontainer:after {
+        content: '\02795';
+        position: absolute;
+        right: -2rem;
+        top: 0;
+    }
+
+    /* The slider itself */
+    .slider {
+        -webkit-appearance: none;  /* Override default CSS styles */
+        appearance: none;
+        background-size: 95%;
+        background-repeat: no-repeat;
+        background-position: center;
+        width: 100%; /* Full-width */
+        height: 1rem;
+        outline: none; /* Remove outline */
+        opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+        -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+        transition: opacity .2s;
+    }
+
+    /* Mouse-over effects */
+    .slider:hover {
+        opacity: 1; /* Fully shown on mouse-over */
+    }
+
+    /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none; /* Override default look */
+        appearance: none;
+        width: 2.1rem; /* Set a specific slider handle width */
+        height: 2.1rem;
+        border-radius: 50%;
+        background: #06486F;
+        cursor: pointer; /* Cursor on hover */
+    }
+
+    .slider::-moz-range-thumb {
+        width: 2.1rem; /* Set a specific slider handle width */
+        height: 2.1rem;
+        border-radius: 50%;
+        background: #06486F;
+        cursor: pointer; /* Cursor on hover */
+    }
+
+    .sliderticks {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 10px;
+    }
+
+    .sliderticks p {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        width: 1px;
+        background: #D3D3D3;
+        height: 10px;
+        line-height: 40px;
+        margin: 0 0 20px 0;
+    }
+
+
+
+
+
+
+
+
+
+    </style>
+
+    <script>
+    function warn_if_needed(error_type_div_id, stepnum_div_id, reason_div_id, warn_div_id, principle_div_id) {
+            step_num_content = document.getElementById(stepnum_div_id).value.trim();
+            step_num_ok = step_num_content.length >= 1 && step_num_content.length < 9;
+            step_errortype_content = document.getElementById(error_type_div_id).value;
+            step_errortype_ok = step_errortype_content.length > 0; // browser enforces "required".
+            reason_content = document.getElementById(reason_div_id).value.trim().toUpperCase();
+            step_reason_ok = reason_content.length >= 20;
+            step_principle_content = document.getElementById(principle_div_id).value.trim().toUpperCase();
+            step_principle_ok = step_principle_content.length >= 20;
+
+            if(!step_errortype_ok){
+                console.log("!step_errortype_ok.");
+                document.getElementById("validate_errortype").innerHTML = '<span style="background:yellow;color:red;">' + "Please select a type of critical error." + '</span>';
+                step_errortype_ok= false;
+            }
+            else if(!step_num_ok){
+                console.log("!step_num_ok.");
+                document.getElementById("validate_stepnums").innerHTML = '<span style="background:yellow;color:red;">' + "Please specify a valid step or edge number" + '</span>';
+                step_num_ok= false;
+            }
+            else if(step_errortype_content.indexOf('critical_wrong_flexible_ordering') >= 0 && !(step_num_content.indexOf(',') > 0 && step_num_content.indexOf('-') > 0)){
+                console.log("Checking if !step_num_style_flexible_ordering_ok. in "+ step_errortype_content);
+                    console.log("!step_num_style_flexible_ordering_ok.");
+                    document.getElementById("validate_stepnums").innerHTML = '<span style="background:yellow;color:red;">' + "Please check the step num (for any ordering error, please provide one edge such as 4-5 or multiple edges in case of flexible ordering such as 4-5, 8-9 ..." + '</span>';
+                    step_num_ok= false;
+            }
+            else if(step_errortype_content.indexOf('critical_wrong_ordering') >= 0 && !(step_num_content.indexOf(',') < 0 && step_num_content.indexOf('-') > 0 && step_num_content.length >= 3)){
+                console.log("Checking if !step_num_style_wrong_ordering_ok. " + step_errortype_content);
+                    console.log("!step_num_style_wrong_ordering_ok.");
+                    document.getElementById("validate_stepnums").innerHTML = '<span style="background:yellow;color:red;">' + "Please check the step num (for any ordering error, please provide one edge such as 4-5 or multiple edges in case of flexible ordering such as 4-5, 8-9 ..." + '</span>';
+                    step_num_ok= false;
+            }
+            else if(step_errortype_content.indexOf('step') >= 0 && !(step_num_content.indexOf(',') < 0 && step_num_content.indexOf('-') < 0 && step_num_content.length <= 2)){
+                console.log("Checking if !step_num_style_missing_or_wrong_step_ok.");
+                    console.log("!step_num_style_missing_or_wrong_step_ok.");
+                    document.getElementById("validate_stepnums").innerHTML = '<span style="background:yellow;color:red;">' + "Please check the step num (for wrong step, please provide one step number such as 4. In case of missing step, provide the step number after which you will insert such as 4" + '</span>';
+                    step_num_ok= false;
+            }
+            else if(!step_reason_ok){
+                console.log("!step_reason_ok.");
+                document.getElementById("validate_reason").innerHTML = '<span style="background:yellow;color:red;">' + "Please specify a detailed reason (atleast a few words long)" + '</span>';
+                step_reason_ok= false;
+            }
+            else if(!step_principle_ok){
+                console.log("!step_principle_ok.");
+                document.getElementById("validate_principle").innerHTML = '<span style="background:yellow;color:red;">' + "Please specify a detailed general principle (atleast a few words long)" + '</span>';
+                step_principle_ok= false;
+            }
+            else if(step_principle_content === reason_content){
+                console.log("!reason_principle_same.");
+                document.getElementById("validate_principle").innerHTML = '<span style="background:yellow;color:red;">' + "Reason and general principles should be different. Please see instructions." + '</span>';
+                step_principle_ok= false;
+            }
+            else{
+                console.log("Looking generally good.");
+            }
+
+            const all_ok = step_errortype_ok && step_num_ok && step_reason_ok && step_principle_ok ;
+
+            // Reset any previous warnings.
+            if(step_errortype_ok)
+                document.getElementById("validate_errortype").innerHTML = '';
+            if(step_num_ok)
+                document.getElementById("validate_stepnums").innerHTML = '';
+            if(step_reason_ok)
+                document.getElementById("validate_reason").innerHTML = '';
+            if(step_principle_ok)
+                document.getElementById("validate_principle").innerHTML = '';
+
+            return all_ok;
+    }
+
+    function validation() {
+        console.log("validation started...");
+        warnings_q1_div = document.getElementById("q1_warning");
+        const q1_ok = document.getElementById('worse_plan_radios0').checked === true || document.getElementById('worse_plan_radios1').checked  === true;
+
+        if (!q1_ok)
+                warnings_q1_div.innerHTML = '<span style="background:yellow;color:red;">' + "Q1 is not answered." + '</span>';
+        else
+            warnings_q1_div.innerHTML =''; // Reset any previous warnings.
+
+        const i = 1;
+        var q2_ok = warn_if_needed("error_type_"+i, "critical_stepnums_reason"+i, 'errors_critical_'+i, "warning_critical_" + i, "errors_critical_"+i+"_principle");
+        if (!q2_ok)
+            document.getElementById("warning_q2").innerHTML='<span style="background:yellow;color:red;">' + 'Q2 is not answered.' + '</span>';
+        else
+            document.getElementById("warning_q2").innerHTML='';
+        validation_result = q1_ok && q2_ok;
+        if (!validation_result)
+            document.getElementById("warnings").innerHTML='<span style="background:yellow;color:red;">' + 'Please fix the answers and then submit.' + '</span>';
+        else
+            document.getElementById("warnings").innerHTML='<span style="background:yellow;color:green;">' + 'Looks good, submitting the result...' + '</span>';
+        return validation_result;
+    }
+
+
+
+
+
+
+
+
+
+    </script>
+    <script>
+        function expand_instructions() {
+           o = document.getElementById("instructions");
+            if (o.style.display === "none")
+                o.style.display = "";
+            else
+                o.style.display = "none";
+        }
+
+
+
+
+
+
+
+
+
+    </script>
+
+    <script>
+
+                var render = dagreD3.render(); // Create and configure the renderer
+
+                function draw_plan(svg_id, inputGraph) {
+                  d3.select(svg_id).select("g").call(render, graphlibDot.read(inputGraph));
+                }
+
+                function draw_plan_examples() {
+                  console.log("Drawing plan examples...");
+                  draw_plan("#svg_example1", 'digraph { "1. decided to see an alligator" -> "2. turn on laptop" ; "2. turn on laptop" -> "3. locate animal places online" ; "3. locate animal places online" -> "4. buy a ticket to the zoo" ; "4. buy a ticket to the zoo" -> "5. drive to the zoo" ; "4. buy a ticket to the zoo" -> "6. get in the car" ; "6. get in the car" -> "7. find the alligators" ; "5. drive to the zoo" -> "7. find the alligators" ; "7. find the alligators" -> "8. see an alligator"  }');
+                  draw_plan("#svg_example2", 'digraph { "2. turn on laptop" -> "3. locate zoos online" ; "3. locate zoos online" -> "4. buy a ticket to the zoo" ; "4. buy a ticket to the zoo" -> "5. get in the car" ; "5. get in the car" -> "6. drive to the zoo" ; "6. drive to the zoo" -> "7. find the alligators" ; "7. find the alligators" -> "8. see an alligator" ; "1. decided to see an alligator" -> "2. turn on laptop"  }');
+                }
+
+                function draw_plan_questions() {
+                  var p1 = '${digraph_plan1}';
+                  var p2 = '${digraph_plan2}';
+                  draw_plan("#svg_q1", p1);
+                  draw_plan("#svg_q2", p2);
+                }
+
+                function draw_on_load() {
+                    draw_plan_examples();
+                    draw_plan_questions();
+                    expand_instructions();
+                }
+
+
+
+
+    </script>
+    <script>$(document).ready(draw_on_load);</script>
+
+</head>
+
+<body>
+<form action="/mturk/externalSubmit" id="mturk_form" method="post" name="mturk_form"
+      onsubmit="return validation();">
+    <input id="assignmentId" name="assignmentId" type="hidden" value=""/>
+
+    <h2 align="center">Which plan is worse? <br/></h2>
+
+    <div class="container">
+        <p>
+            <button class="btn btn-primary" onclick="expand_instructions();" type="button">
+                Instructions (click to expand/ collapse)
+            </button>
+        </p>
+
+        <div id="instructions">
+            <div>
+                <p>Humans are very good at breaking a big goal down to actionable steps. <b>In this HIT, you will be
+                                                                                            shown a goal and two answers
+                                                                                            to achieve it (these answers
+                                                                                            are called plans i.e.,
+                                                                                            actionable steps
+                                                                                            toward the goal). Your task
+                                                                                            is to choose which plan
+                                                                                            looks worse (i.e., looks
+                                                                                            less valid) and why. Note:
+                    <b>IMPORTANT- Please do not write --it does not make sense-- rather explain why in the provided
+                       boxes </b>
+                </b> See instructions below for what reasons/characteristics define a worse plan.<br/></p>
+                <hr>
+                These characteristics <b>define a worse plan</b>:
+                <ul>
+                    <li><span style="background-color: lightblue;">Critical errors</span>:
+                        <ol>
+                            <li><b>Wrong ordering</b>: the order in the sequence of steps is not correct (e.g., wearing
+                                                     shoes is described before wearing socks).
+                            <li><b>Flexible ordering</b>: some steps can be done in a flexible order (e.g., you can wear
+                                                        left sock or right sock first). A bad plan usually does not
+                                                        depict such flexibility.
+                            </li>
+                            <li><b>Missing critical steps</b>: a bad plan might have missed critical steps (e.g., the
+                                                             plan can say: "wait for a plane" followed by "get off the
+                                                             plane" -- here an obvious step
+                                                             "get on the plane" is missing) . There is no strict
+                                                             definition for a critical step, so
+                                                             use your gut feeling.
+                            </li>
+                            <li><b>Wrong step</b>: a bad plan might have irrelevant and wrong steps (e.g., the plan
+                                                 describing "go to a party" might describe an irrelevant step such as
+                                                 read a book, open a
+                                                 book etc.).
+                            </li>
+                        </ol>
+                    </li>
+
+                    <li><span style="background-color: lightblue;"><em>Less</em> Non-critical errors: These characteristics <b>do not define</b> a worse plan:</span>:
+                        <ol>
+                            <li><b>Grammatical and fluency errors</b>: a bad plan usually has less fluent steps or
+                                                                     contains many grammatical mistakes.
+                            </li>
+                            <li><b>Redundant steps</b>: some steps in the plan might have redundant steps, e.g., step 3
+                                                      and step 4 might repeat.
+                            </li>
+                            <li><b>Granularity</b>: note that a more fine-grained plan is <em>not</em> a worse plan
+                                                  (e.g., go the bed, get up, go brush vs. get up, get ready)
+                            </li>
+                        </ol>
+                    </li>
+                </ul>
+                <hr>
+                Some notes:
+                <ol>
+                    <li>You will only need to list one critical error that you believe is most important.
+                    </li>
+                    <li>
+                        You have to justify why that plan is worse.
+                        <ul>
+                            <li>
+                                <b>Type of error</b>: One of
+                                <ul>
+                                    <li>wrong ordering</li>
+                                    <li>incorrect flexible ordering</li>
+                                    <li>wrong step</li>
+                                    <li>missing step</li>
+                                </ul>
+                            </li>
+                            <li><b>step number</b>: i.e., which step or edge is wrong,
+                                                  (e.g., 4-5 indicates edge from step 4 to step 5 is wrong). When
+                                                  referring to a pair of steps (e.g., one should happen after the other)
+                                                  then please write them separated by comma e.g., 4-5, 6-7
+                            </li>
+                            <li>
+                                <b>reason</b>: why is that edge or step wrong? (describe in some detail,
+                                             very short answers are not accepted.)
+                            </li>
+                            <li>
+                                <b>principle</b>: what is the general principle/ rule of thumb behind your reason?
+                                                If you were to explain your reason to a five year old, how would you do
+                                                that through with general principles/ commonsense facts? (describe in
+                                                some detail,
+                                                very short answers are not accepted.)
+                            </li>
+                        </ul>
+
+
+                    </li>
+                    <li>Some plans will make sense to you, but not to another person. That's okay, <b>just mark what you
+                                                                                                      feel is worse and
+                                                                                                      why</b>. It is not
+                        mandatory, but please leave a note in the feedback box,
+                        if you think that your belief might not hold for other persons.
+                        e.g., get a visa, ... (some steps) ... get on the plane, .... will make sense to someone who
+                        has to apply for a visa in advance of travel but not to others who usually do not need a visa
+                        for instance.
+                    </li>
+                    <li>
+                        <b>Rare cases to skip</b>:
+                        <ul>
+                            <li>If the plans do not show up properly,</li>
+                            <li>If both the plans look valid, choose the relatively worse plan.
+                                If you cannot find any critical error in the worse plan, please skip the HIT.
+                            </li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <hr>
+                <h3><b>Example</b></h3>
+                <br>
+                <p> You want to <span style="background-color: lightblue;"><b><u>see an alligator</u></b></span>.
+                    Which plan: P1 (left) or P2 (right) is <b>worse</b>?</p>
+
+                <div class="diagram_container">
+                    <svg id="svg_example1">
+                        <g/>
+                    </svg>
+
+                    <svg id="svg_example2">
+                        <g/>
+                    </svg>
+                </div>
+
+                <br><br>
+                <p><b>Q1. Which plan is worse?</b></p>
+                <div class="col-md-18">
+                    <input checked id="example_worse_plan_radios0" name="example_worse_plan_radios"
+                           type="radio" value="plan1_is_worse">
+                    <label for="example_worse_plan_radios0">1st plan (P1) is worse</label><br>
+                    <input id="example_worse_plan_radios1" name="example_worse_plan_radios" type="radio"
+                           value="plan2_is_worse">
+                    <label for="example_worse_plan_radios1">2nd plan (P2) is worse</label><br>
+                </div>
+
+                <p id="example_reason_ask_p"><b>Q2. Describe one "critical error" in the worse graph </b></p>
+                <div class style="border:2px solid black">
+                    </p>
+                    <table style="border-collapse:separate; border-spacing:2em;">
+                        <tr>
+                            <td>
+                                <label for="example_error_type_1"></label><span
+                                    id="example_validate_error_type"></span>
+                                <select id="example_error_type_1" name="example_error_type_1">
+                                    <option disabled selected value> -- select an error type --</option>
+                                    <option value="critical_wrong_ordering">Critical: wrong ordering</option>
+                                    <option selected value="critical_wrong_flexible_ordering">Critical: incorrect
+                                                                                              flexible
+                                                                                              ordering
+                                    </option>
+                                    <option value="critical_wrong_step">Critical: wrong step</option>
+                                    <option value="critical_missing_step">Critical: missing step</option>
+                                </select>
+                            </td>
+                            <td><input id="example_critical_stepnums_reason1"
+                                       name="example_critical_stepnums_reason1"
+                                       placeholder="error is in step or edge number" type="text"
+                                       value="4-6, 4-5"></td>
+                            <td>&rarr;</td>
+                            <td><textarea cols="20" id="example_errors_critical_1"
+                                          name="example_errors_critical_1"
+                                          rows="3">getting in the car, and driving to the zoo do not have a flexible ordering. You can only do one after the other.</textarea>
+                            </td>
+                            <td><textarea cols="20" id="example_errors_critical_1_principle"
+                                          name="example_errors_critical_1_principle"
+                                          rows="3">People must get into a vehicle, before driving to any place.</textarea>
+                            </td>
+                        </tr>
+                    </table>
+
+                </div>
+            </div>
+
+            <hr/>
+
+            <!-- put hidden variables such as -->
+            <input id="goal" name="goal" type="hidden" value="${goal}"/>
+            <input id="idx" name="idx" type="hidden" value="${idx}"/>
+            <input id="is_reversed" name="is_reversed" type="hidden" value="${is_reversed}"/>
+            <input id="predictor" name="predictor" type="hidden" value="${predictor}"/>
+            <input id="plan1" name="plan1" type="hidden" value="${plan1}"/>
+            <input id="plan2" name="plan2" type="hidden" value="${plan2}"/>
+            <input id="edit_dist" name="plan2" type="hidden" value="${edit_dist}"/>
+
+        </div> <!-- Close example div-->
+
+
+        <div class="container">
+            <!--        <div style="margin:0 auto;">-->
+            <div>
+                <h2 style="background:yellow;"><u>Question:</u></h2>
+                <p> You want to <span style="background-color: lightblue;"><b><u>${goal}</u></b></span>.
+                    Which plan: P1 (left) or P2 (right) is <b>worse</b>?</p>
+
+
+                <div class="diagram_container">
+                    <svg id="svg_q1">
+                        <g/>
+                    </svg>
+
+                    <svg id="svg_q2">
+                        <g/>
+                    </svg>
+                </div>
+
+            </div>
+
+            <br>
+
+
+            <div id="worse_plan_radios_div1">
+                <br><br>
+                <p><b>Q1. Which plan is worse?</b></p>
+                <div id="q1_warning"></div>
+                <div class="col-md-10">
+                    <input id="worse_plan_radios0" name="worse_plan_radios" required
+                           type="radio" value="plan1_is_worse">
+                    <label for="worse_plan_radios0">1st plan (P1) is worse</label><br>
+                    <input id="worse_plan_radios1" name="worse_plan_radios" type="radio"
+                           value="plan2_is_worse">
+                    <label for="worse_plan_radios1">2nd plan (P2) is worse</label><br>
+                </div>
+
+                <p id="reason_ask_p"><b>Q2. You chose that answer because ... ?</b></p>
+                <div class="col-md-18" style="border:2px solid black">
+                    <div id="warning_q2"></div>
+                    <p><b>Describe one "critical error" in the worse graph</b>
+                    </p>
+                    <table style="border-collapse:separate; border-spacing:2em;">
+                        <tr>
+                            <td>
+                                <label for="error_type_1"></label>
+                                <select id="error_type_1" name="error_type_1" required>
+                                    <option disabled selected value> -- select an error type --</option>
+                                    <option value="critical_wrong_ordering">Critical: wrong ordering</option>
+                                    <option value="critical_wrong_flexible_ordering">Critical: incorrect flexible
+                                                                                     ordering
+                                    </option>
+                                    <option value="critical_wrong_step">Critical: wrong step</option>
+                                    <option value="critical_missing_step">Critical: missing step</option>
+                                </select>
+                                <div id="validate_errortype"></div>
+                            </td>
+                            <td><input id="critical_stepnums_reason1" name="critical_stepnums_reason1"
+                                       placeholder="e.g., 4-5" required
+                                       type="text" value="">
+                                <div id="validate_stepnums"></div>
+                            </td>
+                            <td>&rarr;</td>
+                            <td><textarea cols="20" id="errors_critical_1" name="errors_critical_1"
+                                          placeholder="Detailed reason is that ..." required
+                                          rows="3"></textarea>
+                                <div id="validate_reason"></div>
+                            </td>
+                            <td><textarea cols="20" id="errors_critical_1_principle"
+                                          name="errors_critical_1_principle"
+                                          placeholder="the general principle behind your reason is ......"
+                                          required
+                                          rows="3"></textarea>
+                                <div id="validate_principle"></div>
+                            </td>
+
+                        </tr>
+                        <!--                        <tr>-->
+                        <!--                            <td></td>-->
+                        <!--                            <td></td>-->
+                        <!--                            <td></td>-->
+                        <!--                            <td>-->
+                        <!--                                <div id = "warning_critical_1"></div>-->
+                        <!--                            </td>-->
+                        <!--                        </tr>-->
+                    </table>
+                </div>
+
+
+                <p></p>
+                <hr/>
+                <h5>Comments and feedback
+                </h5>
+                <span><textarea class="form-control" cols="40" name="Comments"
+                                placeholder="e.g., questions, suggestions, etc."
+                                rows="3"></textarea></span>
+                <br/>
+
+
+            </div>
+            <!--        </div>-->
+
+            <p align="center"></p>
+            <div align="center" id="warnings" style="color:red"></div>
+
+
+            <p align="center"><u>By clicking Submit, you agree that you have read the instructions and examples.</u>
+            </p>
+            <p align="center">
+                <input id="submitButton" onclick="return validation()" type="submit" value="Submit"/>
+            </p>
+        </div>
+
+    </div>
+</form>
+
+<script language="Javascript">turkSetAssignmentID();</script>
+<script>
+    // accordion
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight){
+                panel.style.maxHeight = null;
+            } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            }
+        });
+    }
+
+
+
+
+
+
+
+
+
+</script>
+
+
+</body>
